@@ -4014,6 +4014,22 @@ if (outputField) {
 updateCharCount();
 }
 
+function countVisibleCharsHuman(text) {
+const stripped = (text || "").replace(/[\n\r\t \u3000]/g, "");
+if (!stripped) return 0;
+
+if (typeof Intl !== "undefined" && typeof Intl.Segmenter !== "undefined") {
+  const segmenter = new Intl.Segmenter("ja", { granularity: "grapheme" });
+  let count = 0;
+  for (const _part of segmenter.segment(stripped)) {
+    count++;
+  }
+  return count;
+}
+
+return Array.from(stripped).length;
+}
+
 function updateCharCount() {
 const inputField = getElementById("input");
 const outputField = getElementById("output");
@@ -4023,13 +4039,13 @@ if (!inputField || !outputField) return;
 const inputText = inputField.value;
 const outputText = outputField.value;
 
-// 改行を除外した文字数をカウント
-let actualOutputLength = outputText.replace(/\n/g, "").length;
+// 改行・空白を除外しつつ、人間に見える1文字寄りでカウント
+let actualOutputLength = countVisibleCharsHuman(outputText);
 if (ZAKRAN_WELCOME_LINES.includes(outputText.trim())) {
   actualOutputLength = 0;
 }
 
-updateElement("inputCount", "innerText", inputText.replace(/\n/g, "").length);
+updateElement("inputCount", "innerText", countVisibleCharsHuman(inputText));
 updateElement("outputCount", "innerText", actualOutputLength);
 updateInfoBoxStyle();
 }
@@ -7593,14 +7609,14 @@ function updateTransferCounts() {
   const zakBox = document.querySelector("#transferBoxZakran textarea");
   const zakCount = document.getElementById("zakranTransferCount");
   if (zakBox && zakCount) {
-    zakCount.innerText = `⚝文字数：${zakBox.value.replace(/\n/g, "").length}字`;
+    zakCount.innerText = `⚝文字数：${countVisibleCharsHuman(zakBox.value)}字`;
   }
 
   // シェライト
   const schBox = document.querySelector("#transferBoxScherite textarea");
   const schCount = document.getElementById("scheriteTransferCount");
   if (schBox && schCount) {
-    schCount.innerText = `⚖記録量：${schBox.value.replace(/\n/g, "").length}字`;
+    schCount.innerText = `⚖記録量：${countVisibleCharsHuman(schBox.value)}字`;
   }
 }
 
