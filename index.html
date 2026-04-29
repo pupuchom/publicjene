@@ -3858,6 +3858,14 @@ screamPatterns.forEach((pattern, i) => {
   output = output.replace(/(\)|）)(?=\|)/g, "$1");
   output = output.replace(/\|([“”"'])/g, "| $1");
   output = output.replace(/ ?\+ ?/g, "+");
+  output = output.split('\n').map(line => {
+    const isTableRow = (line.match(/\|/g) || []).length >= 2;
+    if (!isTableRow) return line;
+    return line.split('|').map(cell => {
+      const trimmed = cell.trim();
+      return trimmed ? ` ${trimmed} ` : cell;
+    }).join('|');
+  }).join('\n');
   output = output.replace(/[ \t　\u00A0]*\[[ \t　\u00A0]*\d+(?:[ \t　\u00A0,，、.\-−–—~〜]+\d+)*[ \t　\u00A0]*\][ \t　\u00A0]*/g, "");
   output = output.replace(/^\s*変更する\s*\n?/gm, "");
   output = output.replace(/。[\u0020\u3000]+/g, "。");
@@ -3944,7 +3952,14 @@ output = output.replace(/__SAFE_DASH__/g, '-');
   return line;
 }).join('\n');
 
-
+  output = output.split('\n').map(line => {
+    const isTableRow = (line.match(/\|/g) || []).length >= 2;
+    if (!isTableRow) return line;
+    return line.split('|').map(cell => {
+      const trimmed = cell.trim();
+      return trimmed ? ` ${trimmed} ` : cell;
+    }).join('|');
+  }).join('\n');
 
   output = output.trim();
     
