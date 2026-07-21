@@ -4170,23 +4170,106 @@ updateElement("outputCount", "innerText", actualOutputLength);
 updateInfoBoxStyle();
 }
 
-// ========== ペースト機能 ==========
-function pasteText() {
-navigator.clipboard.readText().then(text => {
+// ========== ペースト機能（v2：表をMarkdownの縦棒形式で保持） ==========
+function cleanClipboardCellText(text) {
+  return String(text || "")
+    .replace(/\u00A0/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/\|/g, "\\|")
+    .trim();
+}
+
+function tableToMarkdown(table) {
+  const rows = Array.from(table.rows || []).map(row =>
+    Array.from(row.cells || []).map(cell => cleanClipboardCellText(cell.innerText || cell.textContent))
+  );
+
+  if (!rows.length) return "";
+
+  const columnCount = Math.max(...rows.map(row => row.length), 1);
+  const normalizedRows = rows.map(row => [
+    ...row,
+    ...Array(Math.max(0, columnCount - row.length)).fill("")
+  ]);
+  const makeRow = row => `| ${row.join(" | ")} |`;
+  const separator = `| ${Array(columnCount).fill("---").join(" | ")} |`;
+
+  return [makeRow(normalizedRows[0]), separator, ...normalizedRows.slice(1).map(makeRow)].join("\n");
+}
+
+function clipboardHtmlToText(html) {
+  const parsed = new DOMParser().parseFromString(html, "text/html");
+  const blockTags = new Set([
+    "ADDRESS", "ARTICLE", "ASIDE", "BLOCKQUOTE", "DIV", "DL", "DT", "DD",
+    "FIGCAPTION", "FIGURE", "FOOTER", "HEADER", "H1", "H2", "H3", "H4",
+    "H5", "H6", "LI", "MAIN", "NAV", "OL", "P", "PRE", "SECTION", "UL"
+  ]);
+
+  function nodeToText(node) {
+    if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || "";
+    if (node.nodeType !== Node.ELEMENT_NODE) return "";
+
+    const tag = node.tagName;
+    if (tag === "SCRIPT" || tag === "STYLE" || tag === "META" || tag === "LINK") return "";
+    if (tag === "TABLE") return `\n${tableToMarkdown(node)}\n`;
+    if (tag === "BR") return "\n";
+
+    let content = Array.from(node.childNodes).map(nodeToText).join("");
+    if (tag === "LI") content = `• ${content}`;
+    if (blockTags.has(tag)) content += "\n";
+    return content;
+  }
+
+  return nodeToText(parsed.body)
+    .replace(/\u00A0/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+async function readClipboardKeepingTables() {
+  if (navigator.clipboard.read) {
+    try {
+      const items = await navigator.clipboard.read();
+      let plainText = "";
+
+      for (const item of items) {
+        if (item.types.includes("text/html")) {
+          const html = await (await item.getType("text/html")).text();
+          if (/<table[\s>]/i.test(html)) return clipboardHtmlToText(html);
+        }
+        if (!plainText && item.types.includes("text/plain")) {
+          plainText = await (await item.getType("text/plain")).text();
+        }
+      }
+
+      if (plainText) return plainText;
+    } catch (error) {
+      console.info("HTML clipboard unavailable; falling back to plain text.", error);
+    }
+  }
+
+  return navigator.clipboard.readText();
+}
+
+async function pasteText() {
+try {
+  const text = await readClipboardKeepingTables();
   const input = getElementById("input");
   if (input) {
     input.value = text;
     formatText();
     setTimeout(triggerCheck, 100);
   }
-}).catch(err => {
+} catch (err) {
   console.error("Paste failed:", err);
   if (document.body.classList.contains("theme-scherite")) {
     alert("命令違反◆記憶領域への接続が拒絶された。\n理由：外部記録域からの情報読取不許可。\n──再試行せよ、ヒノノギ");
   } else {
     alert("うぅ……ペーストできなかったみたい……\n（ブラウザさんが許してくれなかったんだ）");
   }
-});
+}
 }
 
 // ========== Undo機能 ==========
