@@ -4228,19 +4228,38 @@ function clipboardHtmlToText(html) {
     .trim();
 }
 
+// 長い会話の貼り付けでは、巨大なHTMLを解析せず従来のプレーンテキストへ退避する。
+const MAX_TABLE_PLAIN_TEXT_LENGTH = 50000;
+const MAX_TABLE_HTML_LENGTH = 200000;
+
 async function readClipboardKeepingTables() {
   if (navigator.clipboard.read) {
     try {
       const items = await navigator.clipboard.read();
       let plainText = "";
 
+      // 先に軽いプレーンテキストを取得する。
       for (const item of items) {
-        if (item.types.includes("text/html")) {
-          const html = await (await item.getType("text/html")).text();
-          if (/<table[\s>]/i.test(html)) return clipboardHtmlToText(html);
-        }
         if (!plainText && item.types.includes("text/plain")) {
           plainText = await (await item.getType("text/plain")).text();
+        }
+      }
+
+      // 長文はHTMLのDOM解析を行わない。これがChromeの応答停止を防ぐ安全弁。
+      if (plainText.length > MAX_TABLE_PLAIN_TEXT_LENGTH) {
+        return plainText;
+      }
+
+      // 短い内容に表がある場合だけMarkdown表へ変換する。
+      for (const item of items) {
+        if (!item.types.includes("text/html")) continue;
+
+        const html = await (await item.getType("text/html")).text();
+        if (
+          html.length <= MAX_TABLE_HTML_LENGTH &&
+          /<table[\s>]/i.test(html)
+        ) {
+          return clipboardHtmlToText(html);
         }
       }
 
