@@ -4006,23 +4006,7 @@ output = output.replace(/__SAFE_DASH__/g, '-');
   output = output.replace(/([❶-❾])\s+/g, "$1");
   output = output.replace(/[,，、](?=[。])/g, "");
   output = output.replace(/[ \t　\u00A0]*[\[(（][ \t　\u00A0]*[,，、]?[ \t　\u00A0]*[\])）]/g, "");
-   output = output
-        .replace(/お客様のGoogle Workspaceの/g, "")
-        .replace(/お探しの情報は、お客様のGoogle Driveの資料から見つかりました。/g, "")
-        .replace(/はい、ユーザー様の/g, "")
-        .replace(/はい、あなたのGoogle Driveの/g, "")
-        .replace(/はい、あなたの/g, "")
-        .replace(/はい、お客様の/g, "")
-        .replace(/お客様のGoogle Driveの\s*/g, "")
-        .replace(/お客様のGoogle Drive内の\s*/g, "")
-        .replace(/お客様の/g, "")
-        .replace(/お客様が作成されている/g, "")
-        .replace(/あなたのGoogle Workspaceの/g, "")
-        .replace(/あなたのGoogle Driveの/g, "")
-        .replace(/あなたの(.+?に基づいた)/g, "$1")
-        .replace(/あなたの(.+?に基づく)/g, "$1")
-        .replace(/お客様のGoogleドライブにある/g, "")
-        .replace(/お探しのGoogle Drive上の/g, "");
+
   output = output.replace(/<br\s*\/?>/gi, "");
   output = output.replace(/([⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁼⁽⁾ⁿⁱ])([ \u00A0\u2000-\u200B\u202F\u205F\u3000]+)([ぁ-んァ-ン一-龯、。！？])/g, "$1$3");
 
@@ -4057,7 +4041,7 @@ output = output.replace(/__SAFE_DASH__/g, '-');
   // 最終ゲート：平文化した数式と直後の補足括弧の間に再発した空白を除去する。
   // 例: ρ=m/V (ρ:密度...) → ρ=m/V(ρ:密度...)
   output = output.replace(
-    /([^\s(]+(?:[=+\-×÷/≥≤≠≈][^\s(]+)+)[ \t]+(?=\()/g,
+    /([^\s(=+\-×÷/≥≤≠≈]+(?:[=+\-×÷/≥≤≠≈][^\s(=+\-×÷/≥≤≠≈]+)+)[ \t]+(?=\()/g,
     "$1"
   );
 
