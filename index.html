@@ -4715,7 +4715,11 @@ output = output.replace(/__SAFE_DASH__/g, '-');
   output = output.replace(/[ \t]+([。、「」！？,.])/g, "$1");
   output = output.replace(/([「（(])\s+/g, "$1");
   output = output.replace(/\s+([」）)])/g, "$1");
-  output = output.replace(/[ \t\u00A0\u3000]+([─━―—–-])[ \t\u00A0\u3000]+/g, "$1");
+  // 表の行はセル区切り「| — |」の空白まで潰してしまうため対象外にする。
+  output = output.split('\n').map(line => {
+    if (isMarkdownTableRow(line)) return line;
+    return line.replace(/[ \t\u00A0\u3000]+([─━―—–-])[ \t\u00A0\u3000]+/g, "$1");
+  }).join('\n');
 
   // 最終ゲート：平文化した数式と直後の補足括弧の間に再発した空白を除去する。
 
